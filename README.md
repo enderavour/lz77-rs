@@ -1,8 +1,11 @@
 # lzrs - Implementation of LZ77-based archivator made in Rust
 
 ### Description
-- Project is not yet ready, needs to be fixed with dearchived context of extracted files (They repair in their original structure, but several trash bytes are added -> PDF files appear to be corrupted in such case)
-- Command line argument parsing will be added later, currently archivation and dearchivation process are implemented based on file extension
+- Project supports archivation/dearchivation of files using LZ77 compression algorithm into .lzrs archive
+- To get description of the program, run
+```
+cargo run -- -h
+```
 - To download and run the project:
 ```
 git clone https://github.com/enderavour/lz77-rs.git
@@ -10,16 +13,21 @@ git clone https://github.com/enderavour/lz77-rs.git
 ```
 cd lz77-rs
 ```
+To create an archive (.lzrs):
 ```
-cargo run -- file1.txt file2.txt 
+cargo run -- c file1.txt file2.txt -o archive.lzrs
 ```
-For creating archive (.lzrs file)
+To extract files from archive:
 ```
-cargo run -- file.lzrs
+cargo run -- -d archive.lzrs
 ```
-For dearchivation (extracting files from .lzrs)
+
 - The source code of LZ77 compression and decompression algorithms was partially inspired by and rewritten from [wolfie-things/lz77-algorithm](https://github.com/wolfie-things/lz77-algorithm)
 - Contributors are welcomed.
 
+### TODO issues
+- There still exists issue where trash bytes are added in the end of extracted files, which makes several binary formats (such as PDF) corrupted. Probably the issue is somewhere during serialization of headers or compressed blobs into archive
+
 ### Used crates
 - [memmap2](https://crates.io/crates/memmap2) - A Rust library for cross-platform memory mapped IO.
+- [clap](https://crates.io/crates/clap) - A simple to use, efficient, and full-featured Command Line Argument Parser

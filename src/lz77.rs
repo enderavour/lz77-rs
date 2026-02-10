@@ -85,7 +85,7 @@ pub fn decompress(compressed: &Vec<LzToken>) -> Vec<u8>
         }
         else 
         {
-            let start_pos = decompressed.len() - tok.offset as usize;
+            let start_pos = decompressed.len().saturating_sub(tok.offset as usize);
             let end_pos = start_pos + tok.match_length as usize;
 
             for i in start_pos..end_pos

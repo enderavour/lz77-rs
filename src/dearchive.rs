@@ -1,12 +1,11 @@
 use std::fs::File;
-use std::os::unix::process;
 use crate::lz77::{self, LzToken};
 use std::error::Error;
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 use std::process::exit;
 use crate::archive::LZRSEntry;
 
-struct DecompressedFileEntry
+pub struct DecompressedFileEntry
 {
     name: String,
     contents: Vec<u8>
@@ -16,10 +15,10 @@ pub fn compose_entries(archive_source: &[u8]) -> Vec<LZRSEntry>
 {
     let mut token_array = Vec::new();
 
-    let signature = str::from_utf8(&archive_source[..4]).unwrap();
-    if signature != "LZRS"
+    let signature = &archive_source[..4];
+    if !(signature[0] == 0x4C && signature[1] == 0x5A && signature[2] == 0x52 && signature[3] == 0x53)
     {
-        println!("lzrs: Provided file signature is not correct");
+        eprintln!("lzrs: Provided file signature is not correct");
         exit(-1);
     }
 
@@ -29,7 +28,7 @@ pub fn compose_entries(archive_source: &[u8]) -> Vec<LZRSEntry>
     let mut index = 12;
     let entries_count = u64::from_le_bytes(buffer);
 
-    for i in 0..entries_count
+    for _ in 0..entries_count
     {
         let compressed_size_buf = &archive_source[index..index + 8];
         buffer.copy_from_slice(compressed_size_buf);
@@ -74,7 +73,6 @@ pub fn decompress_file_payloads(archive_contents: &[u8], entries: Vec<LZRSEntry>
             tokens.push(token);
             processed_len += 5;
         }
-        processed_len = 0;
         decompressed.push(DecompressedFileEntry { 
             name: entry.file_name.clone(),
             contents: lz77::decompress(&tokens)
@@ -104,7 +102,7 @@ pub fn extract_files(entries: Vec<DecompressedFileEntry>) -> io::Result<()>
     Ok(())
 }
 
-pub trait SerializeToFile
+pub trait _SerializeToFile
 {
     fn serizalize_to_file(&self, fh: &File) -> Result<(), Box<dyn Error>>;
 }
@@ -114,7 +112,7 @@ pub trait IntoBytes
     fn to_bytes(&self) -> Vec<u8>;
 }
 
-impl SerializeToFile for Vec<LzToken>
+impl _SerializeToFile for Vec<LzToken>
 {
     fn serizalize_to_file(&self, mut fh: &File) -> Result<(), Box<dyn Error>>
     {
