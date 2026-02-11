@@ -15,7 +15,7 @@ cd lz77-rs
 ```
 To create an archive (.lzrs):
 ```
-cargo run -- c file1.txt file2.txt -o archive.lzrs
+cargo run -- -c file1.txt file2.txt -o archive.lzrs
 ```
 To extract files from archive:
 ```
@@ -28,6 +28,16 @@ cargo run -- -d archive.lzrs
 ### TODO issues
 - There still exists issue where trash bytes are added in the end of extracted files, which makes several binary formats (such as PDF) corrupted. Probably the issue is somewhere during serialization of headers or compressed blobs into archive (Fixed ✅)
 - Slow archivation of multiple files. Possibly fix it by reworking some MMF stuff
+
+### Command Line Arguments quick references
+| Argument | Description                                 |
+| :------- | ------------------------------------------- | 
+| -c       | Compress the given files into .lzrs archive |
+| -d       | Decompress files from given .lzrs archive   |
+| -o       | Specify output name of archive              |
+| -h       | Print help                                  | 
+| -v       | Print version                               | 
+
  
 ### Used crates
 - [memmap2](https://crates.io/crates/memmap2) - A Rust library for cross-platform memory mapped IO.
