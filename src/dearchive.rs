@@ -1,9 +1,10 @@
 use std::fs::File;
-use crate::lz77::{self, LzToken};
+use crate::lz77::{self, Lz77Token};
 use std::error::Error;
 use std::io::{self, Write};
 use std::process::exit;
 use crate::archive::LZRSEntry;
+use crate::lz78::Lz78Token;
 
 pub struct DecompressedFileEntry
 {
@@ -74,7 +75,7 @@ pub fn decompress_file_payloads(archive_contents: &[u8], entries: Vec<LZRSEntry>
         while processed_len + 5 <= data.len()
         {
             buf.copy_from_slice(&data[processed_len..processed_len + 5]);
-            let token = LzToken::from_bytes(buf);
+            let token = Lz77Token::from_bytes(buf);
             tokens.push(token);
             processed_len += 5;
         }
@@ -121,7 +122,7 @@ pub trait IntoBytes
     fn to_bytes(&self) -> Vec<u8>;
 }
 
-impl _SerializeToFile for Vec<LzToken>
+impl _SerializeToFile for Vec<Lz77Token>
 {
     fn serizalize_to_file(&self, mut fh: &File) -> Result<(), Box<dyn Error>>
     {
@@ -133,7 +134,7 @@ impl _SerializeToFile for Vec<LzToken>
     }
 }
 
-impl IntoBytes for Vec<LzToken>
+impl IntoBytes for Vec<Lz77Token>
 {
     fn to_bytes(&self) -> Vec<u8> 
     {
@@ -141,6 +142,31 @@ impl IntoBytes for Vec<LzToken>
         for i in self
         {
             bytes.extend_from_slice(&i.to_bytes())
+        }
+        bytes
+    }
+}
+
+impl _SerializeToFile for Vec<Lz78Token>
+{
+    fn serizalize_to_file(&self, mut fh: &File) -> Result<(), Box<dyn Error>> 
+    {
+        for token in self
+        {
+            fh.write_all(&token.to_bytes())?;
+        }
+        Ok(())
+    }
+}
+
+impl IntoBytes for Vec<Lz78Token>
+{
+    fn to_bytes(&self) -> Vec<u8> 
+    {
+        let mut bytes = Vec::new();
+        for i in self 
+        {
+            bytes.extend_from_slice(&i.to_bytes());
         }
         bytes
     }

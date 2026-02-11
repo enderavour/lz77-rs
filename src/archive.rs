@@ -1,7 +1,8 @@
 use std::io::{self, Write};
-use crate::{LOOKAHEAD_BUFFER_SIZE, SEARCH_BUFFER_SIZE, dearchive::IntoBytes, lz77};
+use crate::{LOOKAHEAD_BUFFER_SIZE, SEARCH_BUFFER_SIZE, dearchive::IntoBytes, lz77, lz78};
 use std::fs::File;
 use memmap2::MmapOptions;
+use crate::args::CompressingMode;
 
 pub struct LZRSEntry
 {
@@ -48,13 +49,26 @@ impl LZRSArchiveBuilder
         }
     }
 
-    pub fn add_file(&mut self, name: String, data: &[u8])
+    pub fn add_file(&mut self, name: String, data: &[u8], compressing_mode: CompressingMode)
     {
-        let compressed_data = lz77::compress(
-            data, 
+        let compressed_data: Vec<u8>; 
+        
+        match compressing_mode 
+        {
+            CompressingMode::LZ77 => 
+            {
+                compressed_data = lz77::compress(
+             data, 
             SEARCH_BUFFER_SIZE, 
-            LOOKAHEAD_BUFFER_SIZE
-        ).to_bytes();
+        LOOKAHEAD_BUFFER_SIZE
+                ).to_bytes();
+            }
+
+            CompressingMode::LZ78 => 
+            {
+                compressed_data = lz78::compress(data).to_bytes();
+            }
+        }
 
         self.entries.push(LZRSEntry { 
             compressed_size: compressed_data.len() as u64,
@@ -66,12 +80,12 @@ impl LZRSArchiveBuilder
         self.compressed_blobs.push(compressed_data);
     }
 
-    pub fn add_existing_file(&mut self, filename: String)
+    pub fn add_existing_file(&mut self, filename: String, compressing_mode: CompressingMode)
     {
         let mapped_file = unsafe { 
             MmapOptions::new().map(&File::open(filename.clone()).unwrap()).unwrap()
         };
-        self.add_file(filename, mapped_file.iter().as_slice());
+        self.add_file(filename, mapped_file.iter().as_slice(), compressing_mode);
     }
 
     pub fn write<W: Write>(&mut self, mut w: W) -> io::Result<()>

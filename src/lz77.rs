@@ -1,16 +1,16 @@
 #[derive(Clone, Copy)]
-pub struct LzToken
+pub struct Lz77Token
 {
     offset: u16,
     match_length: u16,
     code: u8
 }
 
-impl LzToken
+impl Lz77Token
 {
     pub fn new() -> Self
     {
-        LzToken { offset: 0, match_length: 0, code: 0 }
+        Lz77Token { offset: 0, match_length: 0, code: 0 }
     }
 
     pub fn to_bytes(&self) -> [u8; 5]
@@ -26,7 +26,7 @@ impl LzToken
 
     pub fn from_bytes(bytes: [u8; 5]) -> Self
     {
-        LzToken { 
+        Lz77Token { 
             offset: u16::from_le_bytes([bytes[0], bytes[1]]),
             match_length: u16::from_le_bytes([bytes[2], bytes[3]]),
             code: bytes[4]
@@ -34,14 +34,14 @@ impl LzToken
     }
 }
 
-pub fn compress(input: &[u8], buffer: usize, look_ahead: i32) -> Vec<LzToken>
+pub fn compress(input: &[u8], buffer: usize, look_ahead: i32) -> Vec<Lz77Token>
 {
     let mut pos = 0;
     let mut data = Vec::new();
 
     while pos < input.len()
     {
-        let mut tok = LzToken::new();
+        let mut tok = Lz77Token::new();
         tok.code = input[pos];
 
         let max_off = if pos < buffer { pos } else { buffer };
@@ -73,27 +73,27 @@ pub fn compress(input: &[u8], buffer: usize, look_ahead: i32) -> Vec<LzToken>
     data
 }
 
-pub fn decompress(compressed: &Vec<LzToken>) -> Vec<u8>
+pub fn decompress(compressed: &Vec<Lz77Token>) -> Vec<u8>
 {
     let mut decompressed = Vec::new();
 
-    for tok in compressed
+    for &Lz77Token { offset, match_length, code } in compressed
     {
-        if tok.offset == 0
+        if offset == 0
         {
-            decompressed.push(tok.code);
+            decompressed.push(code);
         }
         else 
         {
-            let start_pos = decompressed.len().saturating_sub(tok.offset as usize);
-            let end_pos = start_pos + tok.match_length as usize;
+            let start_pos = decompressed.len().saturating_sub(offset as usize);
+            let end_pos = start_pos + match_length as usize;
 
             for i in start_pos..end_pos
             {
                 decompressed.push(decompressed[i]);
             }
 
-            decompressed.push(tok.code);
+            decompressed.push(code);
         }
     }
     decompressed

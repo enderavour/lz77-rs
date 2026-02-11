@@ -1,4 +1,4 @@
-use clap::{Parser, ArgAction};
+use clap::{Parser, ArgAction, ValueEnum};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -8,6 +8,9 @@ use clap::{Parser, ArgAction};
 )]
 pub struct LZRSArgs
 {
+    #[arg(long, short, value_enum, help = "Select compression algorithm. LZ77 or LZ78")]
+    pub mode: CompressingMode,
+
     #[arg(long, short, action = ArgAction::SetTrue, help = "Compress the given files into .lzrs archive")]
     pub compress: bool,
 
@@ -21,3 +24,9 @@ pub struct LZRSArgs
     pub files: Vec<String>
 }
 
+#[derive(ValueEnum, Clone, Debug)]
+pub enum CompressingMode
+{
+    LZ77,
+    LZ78
+}

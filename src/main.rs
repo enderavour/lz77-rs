@@ -1,4 +1,5 @@
 mod lz77;
+mod lz78;
 mod dearchive;
 mod archive;
 mod args;
@@ -9,7 +10,9 @@ use clap::Parser;
 use memmap2::MmapOptions;
 use args::LZRSArgs;
 use std::process::exit;
+use crate::args::CompressingMode;
 
+// Constants for LZ77
 const SEARCH_BUFFER_SIZE: usize = 256;
 const LOOKAHEAD_BUFFER_SIZE: i32 = 64;
 
@@ -25,29 +28,59 @@ fn main() -> Result<(), Box<dyn Error>>
 
     if command_line_args.compress
     {
-            let mut builder = LZRSArchiveBuilder::new();
-            for file_name in &command_line_args.files 
+        match command_line_args.mode
+        {
+            CompressingMode::LZ77 => 
             {
-                builder.add_existing_file(file_name.clone());
-            }
+                let mut builder = LZRSArchiveBuilder::new();
+                for file_name in &command_line_args.files 
+                {
+                    builder.add_existing_file(
+                        file_name.clone(), 
+                        CompressingMode::LZ77
+                    );
+                }
 
-            builder.write_to_file(command_line_args.output.unwrap_or("unnamed.lzrs".to_owned()))?;
+                builder.write_to_file(command_line_args.output.unwrap_or("unnamed.lzrs".to_owned()))?;
+            }
+            CompressingMode::LZ78 => 
+            {
+                let mut builder = LZRSArchiveBuilder::new();
+                
+                for file_name in &command_line_args.files 
+                {
+                    builder.add_existing_file(
+                        file_name.clone(), 
+                        CompressingMode::LZ78
+                    );
+                }
+
+                builder.write_to_file(command_line_args.output.unwrap_or("unnamed.lzrs".to_owned()))?;
+            }
+        }
     }
     
     if command_line_args.decompress
     {
-        let entered_file_name = &command_line_args.files[0];
-        if entered_file_name.ends_with(".lzrs") {
-            let mapped_archive = unsafe {
-                MmapOptions::new().map(&File::open(entered_file_name.clone()).unwrap()).unwrap()
-            };
-
-            dearchive::extract_archive(&mapped_archive.iter().as_slice())?;
-        } 
-        else 
+        match command_line_args.mode
         {
-            eprintln!("lzrs: Incorrect file format for decompress: {}", entered_file_name);
-            return Err("File should have .lzrs extension".into());
+            CompressingMode::LZ77 => 
+            {
+                let entered_file_name = &command_line_args.files[0];
+                if entered_file_name.ends_with(".lzrs") {
+                    let mapped_archive = unsafe {
+                        MmapOptions::new().map(&File::open(entered_file_name.clone()).unwrap()).unwrap()
+                    };
+
+                    dearchive::extract_archive(&mapped_archive.iter().as_slice())?;
+                } 
+                else 
+                {
+                    eprintln!("lzrs: Incorrect file format for decompress: {}", entered_file_name);
+                    return Err("File should have .lzrs extension".into());
+                }
+            }
+            CompressingMode::LZ78 => {}
         }
     }
     Ok(())
