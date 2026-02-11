@@ -26,8 +26,9 @@ cargo run -- -d archive.lzrs
 - Contributors are welcomed.
 
 ### TODO issues
-- There still exists issue where trash bytes are added in the end of extracted files, which makes several binary formats (such as PDF) corrupted. Probably the issue is somewhere during serialization of headers or compressed blobs into archive
-
+- There still exists issue where trash bytes are added in the end of extracted files, which makes several binary formats (such as PDF) corrupted. Probably the issue is somewhere during serialization of headers or compressed blobs into archive (Fixed ✅)
+- Slow archivation of multiple files. Possibly fix it by reworking some MMF stuff
+ 
 ### Used crates
 - [memmap2](https://crates.io/crates/memmap2) - A Rust library for cross-platform memory mapped IO.
 - [clap](https://crates.io/crates/clap) - A simple to use, efficient, and full-featured Command Line Argument Parser

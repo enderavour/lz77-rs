@@ -34,6 +34,10 @@ pub fn compose_entries(archive_source: &[u8]) -> Vec<LZRSEntry>
         buffer.copy_from_slice(compressed_size_buf);
         let compressed_size = u64::from_le_bytes(buffer);
         index += 8;
+        let original_size_buf = &archive_source[index..index + 8];
+        buffer.copy_from_slice(original_size_buf);
+        let original_size = u64::from_le_bytes(buffer);
+        index += 8;
         let data_offset_buf = &archive_source[index..index + 8];
         buffer.copy_from_slice(data_offset_buf);
         let data_offset = u64::from_le_bytes(buffer);
@@ -48,6 +52,7 @@ pub fn compose_entries(archive_source: &[u8]) -> Vec<LZRSEntry>
         index += name_len as usize;
         token_array.push(LZRSEntry {
             compressed_size: compressed_size,
+            original_size: original_size,
             data_offset: data_offset,
             file_name: filename.to_owned()
         });
@@ -58,7 +63,7 @@ pub fn compose_entries(archive_source: &[u8]) -> Vec<LZRSEntry>
 pub fn decompress_file_payloads(archive_contents: &[u8], entries: Vec<LZRSEntry>) -> Vec<DecompressedFileEntry>
 {
     let mut decompressed = Vec::new();
-    for entry in entries.iter()
+    for entry in entries
     {
         let start_index = entry.data_offset as usize;
         let end_index = start_index + entry.compressed_size as usize;
@@ -73,9 +78,13 @@ pub fn decompress_file_payloads(archive_contents: &[u8], entries: Vec<LZRSEntry>
             tokens.push(token);
             processed_len += 5;
         }
+
+        let mut decompressed_file_blob = lz77::decompress(&tokens);
+        decompressed_file_blob.truncate(entry.original_size as usize);
+
         decompressed.push(DecompressedFileEntry { 
             name: entry.file_name.clone(),
-            contents: lz77::decompress(&tokens)
+            contents: decompressed_file_blob
         });
     }
     decompressed
@@ -118,7 +127,7 @@ impl _SerializeToFile for Vec<LzToken>
     {
         for token in self
         {
-            fh.write(&token.to_bytes())?;
+            fh.write_all(&token.to_bytes())?;
         }
         Ok(())
     }

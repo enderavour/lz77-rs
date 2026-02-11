@@ -6,6 +6,7 @@ use memmap2::MmapOptions;
 pub struct LZRSEntry
 {
     pub compressed_size: u64,
+    pub original_size: u64,
     pub data_offset: u64,
     pub file_name: String
 }
@@ -31,7 +32,7 @@ impl LZRSArchiveBuilder
         size += 8; // entries count
         for entry in self.entries.iter()
         {
-            size += 8 + 8 + 8 + entry.file_name.len() as u64;
+            size += 8 + 8 + 8 + 8 + entry.file_name.len() as u64;
         }
         size
     }
@@ -57,6 +58,7 @@ impl LZRSArchiveBuilder
 
         self.entries.push(LZRSEntry { 
             compressed_size: compressed_data.len() as u64,
+            original_size: data.len() as u64,
             data_offset: 0,
             file_name: name
         });
@@ -84,6 +86,7 @@ impl LZRSArchiveBuilder
         for e in self.entries.iter()
         {
             w.write_all(&e.compressed_size.to_le_bytes())?;
+            w.write_all(&e.original_size.to_le_bytes())?;
             w.write_all(&e.data_offset.to_le_bytes())?;
 
             let file_name = e.file_name.as_bytes();

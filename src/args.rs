@@ -2,7 +2,7 @@ use clap::{Parser, ArgAction};
 
 #[derive(Parser, Debug)]
 #[command(
-    version = "0.2", 
+    version = "0.3", 
     about = "Archivator program based on LZ77 compressing algorithm", 
     long_about = "Copyright @ 2026 enderavour"
 )]
