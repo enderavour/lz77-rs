@@ -2,32 +2,28 @@ use std::collections::HashMap;
 
 pub struct Lz78Token
 {
-    index: u16,
+    index: u64,
     code: u8
 }
 
 impl Lz78Token
 {
-    pub fn new() -> Self
-    {
-        Lz78Token { index: 0, code: 0 }
-    }
+    pub fn to_bytes(&self) -> [u8; 9] {
+        let mut token_bytes = [0u8; 9];
 
-    pub fn to_bytes(&self) -> [u8; 3]
-    {
-        let mut token_bytes = [0u8; 3];
-        token_bytes[0] = (self.index & 0xFF) as u8;
-        token_bytes[1] = ((self.index >> 8) & 0xFF) as u8;
-        token_bytes[2] = self.code;
+        token_bytes[..8].copy_from_slice(&self.index.to_le_bytes());
+        token_bytes[8] = self.code;
+
         token_bytes
     }
 
-    pub fn from_bytes(bytes: [u8; 3]) -> Self
-    {
-        Lz78Token 
-        {
-            index: u16::from_le_bytes([bytes[0], bytes[1]]),
-            code: bytes[2]
+    pub fn from_bytes(bytes: [u8; 9]) -> Self {
+        let mut index_bytes = [0u8; 8];
+        index_bytes.copy_from_slice(&bytes[..8]);
+
+        Lz78Token {
+            index: u64::from_le_bytes(index_bytes),
+            code: bytes[8],
         }
     }
 }
@@ -35,7 +31,7 @@ impl Lz78Token
 pub fn compress(input: &[u8]) -> Vec<Lz78Token>
 {
     let mut compressed = Vec::new();
-    let mut storage: HashMap<Vec<u8>, u16> = HashMap::new();
+    let mut storage: HashMap<Vec<u8>, u64> = HashMap::new();
     storage.insert(Vec::new(), 0);
 
     let mut current = Vec::new();
@@ -49,11 +45,11 @@ pub fn compress(input: &[u8]) -> Vec<Lz78Token>
             let index = *storage.get(prefix).unwrap();
 
             compressed.push(Lz78Token {
-                index: index as u16,
+                index: index as u64,
                 code: byte
             });
 
-            let new_index = storage.len() as u16;
+            let new_index = storage.len() as u64;
             storage.insert(current.clone(), new_index);
 
             current.clear();

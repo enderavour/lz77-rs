@@ -4,7 +4,9 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::process::exit;
 use crate::archive::LZRSEntry;
-use crate::lz78::Lz78Token;
+use crate::lz78::{self, Lz78Token};
+
+static mut COMPRESSION_METHOD: u32 = 0;
 
 pub struct DecompressedFileEntry
 {
@@ -23,10 +25,16 @@ pub fn compose_entries(archive_source: &[u8]) -> Vec<LZRSEntry>
         exit(-1);
     }
 
-    let mut buffer = [0u8; 8];
-    buffer.copy_from_slice(&archive_source[4..12]);
+    let mut compression_method_buffer = [0u8; 4];
+    compression_method_buffer.copy_from_slice(&archive_source[4..8]);
+    let compression_method = u32::from_le_bytes(compression_method_buffer);
 
-    let mut index = 12;
+    unsafe { COMPRESSION_METHOD = compression_method };
+
+    let mut buffer = [0u8; 8];
+    buffer.copy_from_slice(&archive_source[8..16]);
+
+    let mut index = 16;
     let entries_count = u64::from_le_bytes(buffer);
 
     for _ in 0..entries_count
@@ -69,24 +77,50 @@ pub fn decompress_file_payloads(archive_contents: &[u8], entries: Vec<LZRSEntry>
         let start_index = entry.data_offset as usize;
         let end_index = start_index + entry.compressed_size as usize;
         let data = &archive_contents[start_index..end_index];
-        let mut tokens = Vec::new();
-        let mut processed_len = 0;
-        let mut buf = [0u8; 5];
-        while processed_len + 5 <= data.len()
+        
+        if unsafe { COMPRESSION_METHOD } == 77
         {
-            buf.copy_from_slice(&data[processed_len..processed_len + 5]);
-            let token = Lz77Token::from_bytes(buf);
-            tokens.push(token);
-            processed_len += 5;
+            let mut tokens = Vec::new();
+            let mut processed_len = 0;
+            let mut buf = [0u8; 5];
+            while processed_len + 5 <= data.len()
+            {
+                buf.copy_from_slice(&data[processed_len..processed_len + 5]);
+                let token = Lz77Token::from_bytes(buf);
+                tokens.push(token);
+                processed_len += 5;
+            }
+
+            let mut decompressed_file_blob = lz77::decompress(&tokens);
+            decompressed_file_blob.truncate(entry.original_size as usize);
+
+            decompressed.push(DecompressedFileEntry { 
+                name: entry.file_name.clone(),
+                contents: decompressed_file_blob
+            });
         }
+        else if unsafe { COMPRESSION_METHOD } == 78
+        {
+            let mut tokens = Vec::new();
+            let mut processed_len = 0;
+            let mut buf = [0u8; 9];
 
-        let mut decompressed_file_blob = lz77::decompress(&tokens);
-        decompressed_file_blob.truncate(entry.original_size as usize);
+            while processed_len + 9 <= data.len()
+            {
+                buf.copy_from_slice(&data[processed_len..processed_len + 9]);
+                let token = Lz78Token::from_bytes(buf);
+                tokens.push(token);
+                processed_len += 9;
+            }
 
-        decompressed.push(DecompressedFileEntry { 
-            name: entry.file_name.clone(),
-            contents: decompressed_file_blob
-        });
+            let mut decompressed_file_blob = lz78::decompress(&tokens);
+            decompressed_file_blob.truncate(entry.original_size as usize);
+
+            decompressed.push(DecompressedFileEntry { 
+                name: entry.file_name.clone(),
+                contents: decompressed_file_blob
+            });
+        }
     }
     decompressed
 }

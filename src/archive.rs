@@ -15,6 +15,7 @@ pub struct LZRSEntry
 pub struct LZRSArchiveBuilder
 {
     entries: Vec<LZRSEntry>,
+    compression_method: u32,
     compressed_blobs: Vec<Vec<u8>>
 }
 
@@ -22,7 +23,20 @@ impl LZRSArchiveBuilder
 {
     pub fn new() -> Self
     {
-        LZRSArchiveBuilder { entries: Vec::new(), compressed_blobs: Vec::new() }
+        LZRSArchiveBuilder { 
+            entries: Vec::new(), 
+            compression_method: 0,
+            compressed_blobs: Vec::new() 
+        }
+    }
+
+    pub fn set_compression_method(&mut self, compressing_mode: CompressingMode)
+    {
+        self.compression_method = match compressing_mode 
+        {
+            CompressingMode::LZ77 => 77,
+            CompressingMode::LZ78 => 78
+        };
     }
 
     fn header_size(&self) -> u64
@@ -30,6 +44,7 @@ impl LZRSArchiveBuilder
         let mut size = 0;
 
         size += 4; // signature
+        size += 4; // compression method (LZ77 or LZ78)
         size += 8; // entries count
         for entry in self.entries.iter()
         {
@@ -95,6 +110,7 @@ impl LZRSArchiveBuilder
         // Serialization of header
 
         w.write_all(b"LZRS")?; // Signature
+        w.write_all(&self.compression_method.to_le_bytes())?; // Compression Method
         w.write_all(&(self.entries.len() as u64).to_le_bytes())?; // Entries count
 
         for e in self.entries.iter()

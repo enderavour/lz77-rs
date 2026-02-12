@@ -28,11 +28,12 @@ fn main() -> Result<(), Box<dyn Error>>
 
     if command_line_args.compress
     {
-        match command_line_args.mode
+        match command_line_args.method
         {
             CompressingMode::LZ77 => 
             {
                 let mut builder = LZRSArchiveBuilder::new();
+                builder.set_compression_method(CompressingMode::LZ77);
                 for file_name in &command_line_args.files 
                 {
                     builder.add_existing_file(
@@ -46,6 +47,7 @@ fn main() -> Result<(), Box<dyn Error>>
             CompressingMode::LZ78 => 
             {
                 let mut builder = LZRSArchiveBuilder::new();
+                builder.set_compression_method(CompressingMode::LZ78);
                 
                 for file_name in &command_line_args.files 
                 {
@@ -62,25 +64,19 @@ fn main() -> Result<(), Box<dyn Error>>
     
     if command_line_args.decompress
     {
-        match command_line_args.mode
+        let entered_file_name = &command_line_args.files[0];
+        if entered_file_name.ends_with(".lzrs") 
         {
-            CompressingMode::LZ77 => 
-            {
-                let entered_file_name = &command_line_args.files[0];
-                if entered_file_name.ends_with(".lzrs") {
-                    let mapped_archive = unsafe {
-                        MmapOptions::new().map(&File::open(entered_file_name.clone()).unwrap()).unwrap()
-                    };
+            let mapped_archive = unsafe {
+                MmapOptions::new().map(&File::open(entered_file_name.clone()).unwrap()).unwrap()
+            };
 
-                    dearchive::extract_archive(&mapped_archive.iter().as_slice())?;
-                } 
-                else 
-                {
-                    eprintln!("lzrs: Incorrect file format for decompress: {}", entered_file_name);
-                    return Err("File should have .lzrs extension".into());
-                }
-            }
-            CompressingMode::LZ78 => {}
+            dearchive::extract_archive(&mapped_archive.iter().as_slice())?;
+        }
+        else 
+        {
+            eprintln!("lzrs: Incorrect file format for decompress: {}", entered_file_name);
+            return Err("File should have .lzrs extension".into());
         }
     }
     Ok(())
