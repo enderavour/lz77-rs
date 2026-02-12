@@ -1,3 +1,4 @@
+
 # lzrs - Implementation of LZ77/78-based archivator made in Rust
 
 ### Description
@@ -11,7 +12,7 @@ cargo run -- -h
 git clone https://github.com/enderavour/lzrs.git
 ```
 ```
-cd lz77-rs
+cd lzrs
 ```
 To create an archive (.lzrs):
 ```
