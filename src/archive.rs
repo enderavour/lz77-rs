@@ -53,7 +53,7 @@ impl LZRSArchiveBuilder
         size += 8; // entries count
         for entry in self.entries.iter()
         {
-            size += 8 + 8 + 8 + 8 + 1 + entry.file_name.len() as u64;
+            size += 8 + 8 + 8 + 8 + entry.file_name.len() as u64;
         }
         size
     }
@@ -143,7 +143,7 @@ impl LZRSArchiveBuilder
             data_offset.iter_mut().for_each(|b| *b ^= self.random_salt);
             w.write_all(data_offset)?;
 
-            let file_name = unsafe { e.file_name.as_bytes_mut() };
+            let mut file_name = e.file_name.as_bytes().to_vec();
             file_name.iter_mut().for_each(|b| *b ^= self.random_salt);
 
             let name_len = file_name.len() as u64;
@@ -152,7 +152,7 @@ impl LZRSArchiveBuilder
             name_len_bytes.iter_mut().for_each(|b| *b ^= self.random_salt);
 
             w.write_all(name_len_bytes)?;
-            w.write_all(file_name)?;
+            w.write_all(&file_name)?;
         }
 
         for blob in self.compressed_blobs.iter()

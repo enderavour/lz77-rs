@@ -15,7 +15,7 @@ pub struct DecompressedFileEntry
     contents: Vec<u8>
 }
 
-pub fn compose_entries(archive_source: &mut [u8]) -> Vec<LZRSEntry>
+pub fn compose_entries(archive_source: &[u8]) -> Vec<LZRSEntry>
 {
     let mut token_array = Vec::new();
 
@@ -40,6 +40,7 @@ pub fn compose_entries(archive_source: &mut [u8]) -> Vec<LZRSEntry>
     buffer.copy_from_slice(&archive_source[9..17]);
 
     let mut index = 17;
+    buffer.iter_mut().for_each(|b| *b ^= random_salt);
     let entries_count = u64::from_le_bytes(buffer);
 
     for _ in 0..entries_count
@@ -65,9 +66,9 @@ pub fn compose_entries(archive_source: &mut [u8]) -> Vec<LZRSEntry>
         let name_len = u64::from_le_bytes(buffer);
         index += 8;
 
-        let filename_buf = &mut archive_source[index..index + name_len as usize];
-        filename_buf.iter_mut().for_each(|b| *b ^= random_salt);
-        let filename = str::from_utf8(filename_buf).unwrap();
+        let mut filename_vec = archive_source[index..index + name_len as usize].to_vec();
+        filename_vec.iter_mut().for_each(|b| *b ^= random_salt);
+        let filename = str::from_utf8(&filename_vec).unwrap();
         index += name_len as usize;
         token_array.push(LZRSEntry {
             compressed_size: compressed_size,
@@ -119,6 +120,7 @@ pub fn decompress_file_payloads(archive_contents: &[u8], entries: Vec<LZRSEntry>
             while processed_len + 9 <= data.len()
             {
                 buf.copy_from_slice(&data[processed_len..processed_len + 9]);
+                buf.iter_mut().for_each(|b| *b ^= unsafe { RANDOM_SALT });
                 let token = Lz78Token::from_bytes(buf);
                 tokens.push(token);
                 processed_len += 9;
@@ -136,7 +138,7 @@ pub fn decompress_file_payloads(archive_contents: &[u8], entries: Vec<LZRSEntry>
     decompressed
 }
 
-pub fn extract_archive(archive_payload: &mut [u8]) -> io::Result<()>
+pub fn extract_archive(archive_payload: &[u8]) -> io::Result<()>
 {
     let entries = compose_entries(archive_payload);
 

@@ -33,6 +33,10 @@ cargo run -- -d archive.lzrs
 ### TODO issues
 - Slow archivation of multiple files. Possibly fix it by reworking some MMF stuff
 
+### Release notes 0.5
+- Added XOR cypher of full file contents
+- Changed default algorithm to LZ78
+
 ### Command Line Arguments quick references
 | Argument | Description                                                     |
 | :------- | --------------------------------------------------------------- | 
@@ -47,3 +51,4 @@ cargo run -- -d archive.lzrs
 ### Used crates
 - [memmap2](https://crates.io/crates/memmap2) - A Rust library for cross-platform memory mapped IO.
 - [clap](https://crates.io/crates/clap) - A simple to use, efficient, and full-featured Command Line Argument Parser
+- [rand](https://crates.io/crates/rand) - Random number generators and other randomness functionality. 

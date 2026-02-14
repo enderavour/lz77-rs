@@ -2,12 +2,12 @@ use clap::{Parser, ArgAction, ValueEnum};
 
 #[derive(Parser, Debug)]
 #[command(
-    version = "0.4", 
+    version = "0.5", 
     about = "Archivator program based on LZ77/78 compressing algorithm"
 )]
 pub struct LZRSArgs
 {
-    #[arg(long, short, value_enum, default_value_t = CompressingMode::LZ77, help = "Select compression algorithm. LZ77 or LZ78")]
+    #[arg(long, short, value_enum, default_value_t = CompressingMode::LZ78, help = "Select compression algorithm. LZ77 or LZ78")]
     pub method: CompressingMode,
 
     #[arg(long, short, action = ArgAction::SetTrue, help = "Compress the given files into .lzrs archive")]
